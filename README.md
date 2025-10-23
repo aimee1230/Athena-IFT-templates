@@ -16,6 +16,7 @@ Example: --limit 10 processes only 10 CVEs for faster testing.
 
 
 ### Project Structure
+```bash
 ├── cve.py                       # Fills CVE templates from PostgreSQL
 ├── mitre.py                     # Fills ATT&CK templates from athena-database
 ├── cwe.py                       # Fills CWE templates using athena-database
@@ -25,6 +26,7 @@ Example: --limit 10 processes only 10 CVEs for faster testing.
 ├── templates/                   # JSONL template files
 ├── filled_templates/            # Output files (auto-created)
 └── requirements.txt
+```
 
 #### Notes
 PostgreSQL helper (query_postgre.py): runs SQL queries to fetch structured data (e.g., CVE details).
