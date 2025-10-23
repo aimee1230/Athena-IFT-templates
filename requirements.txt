@@ -1,0 +1,11 @@
+# PostgreSQL database adapter
+psycopg2-binary>=2.9.0
+
+# HTTP requests library for Neo4j API calls
+requests>=2.28.0
+
+# HTTP retry and connection pooling
+urllib3>=1.26.0
+
+# Type hints support (for Python < 3.9)
+typing-extensions>=4.0.0

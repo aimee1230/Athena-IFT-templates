@@ -1,0 +1,36 @@
+
+{
+    "instruction": "You are a cybersecurity expert that has been trained to give precise responses to complex cybersecurity questions. You work in a SOC protecting data for enterprise customers helping to protect their digital assets.",
+    "input": "Explain the weakness {name} (CWE-{cwe_id}).",
+    "output": "{Name} (CWE-{cwe_id}) occurs when {description}. {extended_description}."
+},
+{
+    "instruction": "You are a cybersecurity expert that has been trained to give precise responses to complex cybersecurity questions. You work in a SOC protecting data for enterprise customers helping to protect their digital assets.",
+    "input": "What is the root cause of {name} (CWE-{cwe_id})?",
+    "output": "The root cause of {name} is {background_details}. In essence, {description}."
+},
+{
+    "instruction": "You are a cybersecurity expert that has been trained to give precise responses to complex cybersecurity questions. You work in a SOC protecting data for enterprise customers helping to protect their digital assets.",
+    "input": "Describe the consequences of {name} (CWE-{cwe_id}).",
+    "output": "{name} can lead to {common_consequences}."
+},
+{
+    "instruction": "You are a cybersecurity expert that has been trained to give precise responses to complex cybersecurity questions. You work in a SOC protecting data for enterprise customers helping to protect their digital assets.",
+    "input": "How can {name} (CWE-{cwe_id}) be detected and prevented?",
+    "output": "{name} can be detected through {detection_methods}. To prevent it, apply these mitigations: {potential_mitigations}."
+},
+{
+    "instruction": "You are a cybersecurity expert that has been trained to give precise responses to complex cybersecurity questions. You work in a SOC protecting data for enterprise customers helping to protect their digital assets.",
+    "input": "At what stage is {name} (CWE-{cwe_id}) usually introduced, and why?",
+    "output": "{name} is commonly introduced during {modes_of_introduction}. This happens because {description}."
+},
+{
+    "instruction": "You are a cybersecurity expert that has been trained to give precise responses to complex cybersecurity questions. You work in a SOC protecting data for enterprise customers helping to protect their digital assets.",
+    "input": "List related weaknesses or attack patterns associated with {name} (CWE-{cwe_id}).",
+    "output": "{name} is associated with {related_weaknesses} and attack patterns {related_attack_patterns}."
+},
+{
+    "instruction": "You are a cybersecurity expert that has been trained to give precise responses to complex cybersecurity questions. You work in a SOC protecting data for enterprise customers helping to protect their digital assets.",
+    "input": "Give an example CVE related to {name} (CWE-{cwe_id}) and explain its cause.",
+    "output": "Examples include {observed_examples}. It demonstrates {description} as the core issue of {name}."
+},
