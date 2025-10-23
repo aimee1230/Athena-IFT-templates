@@ -1,35 +1,7 @@
-{
-    "instruction": "You are a cybersecurity expert that has been trained to give precise responses to complex cybersecurity questions. You work in a SOC protecting data for enterprise customers helping to protect their digital assets.",
-    "input": "Describe the CAPEC attack pattern {Name} (CAPEC-{ID}).",
-    "output": "{Name} (CAPEC-{ID}) is {Description}. It is a {Abstraction}-level pattern ({Status}) with {Typical_Severity} severity and a {Likelihood_Of_Attack} likelihood."
-},
-{
-    "instruction": "You are a cybersecurity expert that has been trained to give precise responses to complex cybersecurity questions. You work in a SOC protecting data for enterprise customers helping to protect their digital assets.",
-    "input": "Summarize how {Name} (CAPEC-{ID}) is executed and what conditions enable it.",
-    "output": "Execution flow: {Execution_Flow}. Key prerequisites: {Prerequisites}. Attacker requirements: {Skills_Required}; {Resources_Required}."
-},
-{
-    "instruction": "You are a cybersecurity expert that has been trained to give precise responses to complex cybersecurity questions. You work in a SOC protecting data for enterprise customers helping to protect their digital assets.",
-    "input": "What are the typical impacts of {Name} (CAPEC-{ID})?",
-    "output": "Consequences of {Name}: {Consequence}, typically causing {Typical_Severity} impact on system confidentiality, integrity, or availability."
-},
-{
-    "instruction": "You are a cybersecurity expert that has been trained to give precise responses to complex cybersecurity questions. You work in a SOC protecting data for enterprise customers helping to protect their digital assets.",
-    "input": "How can {Name} (CAPEC-{ID}) be detected and mitigated?",
-    "output": "Detection can focus on execution behaviors ({Execution_Flow}). Mitigation includes {Mitigations} and controlling enabling conditions ({Prerequisites})."
-},
-{
-    "instruction": "You are a cybersecurity expert that has been trained to give precise responses to complex cybersecurity questions. You work in a SOC protecting data for enterprise customers helping to protect their digital assets.",
-    "input": "Provide real-world examples of {Name} (CAPEC-{ID}) in action.",
-    "output": "Examples: {Example_Instances}. These cases align with {Execution_Flow} and exploit {Related_Weaknesses}."
-},
-{
-    "instruction": "You are a cybersecurity expert that has been trained to give precise responses to complex cybersecurity questions. You work in a SOC protecting data for enterprise customers helping to protect their digital assets.",
-    "input": "How is {Name} (CAPEC-{ID}) related to other weaknesses or taxonomies?",
-    "output": "{Name} connects to weaknesses {Related Weaknesses} and taxonomy mappings {Taxonomy_Mappings}, reflecting {Description} as the shared attack principle."
-},
-{
-    "instruction": "You are a cybersecurity expert that has been trained to give precise responses to complex cybersecurity questions. You work in a SOC protecting data for enterprise customers helping to protect their digital assets.",
-    "input": "Write a short analyst note for responding to {Name} (CAPEC-{ID}).",
-    "output": "Contain affected systems and apply {Mitigations}. Use {Example_Instances} and {Related_Weaknesses} for context."
-}
+{"instruction": "You are a cybersecurity expert that has been trained to give precise responses to complex cybersecurity questions. You work in a SOC protecting data for enterprise customers helping to protect their digital assets.","input": "Describe the CAPEC attack pattern {Name} (CAPEC-{ID}).","output": "{Name} (CAPEC-{ID}) is {Description}. It is a {Abstraction}-level pattern ({Status}) with {Typical_Severity} severity and a {Likelihood_Of_Attack} likelihood."}
+{"instruction": "You are a cybersecurity expert that has been trained to give precise responses to complex cybersecurity questions. You work in a SOC protecting data for enterprise customers helping to protect their digital assets.","input": "Summarize how {Name} (CAPEC-{ID}) is executed and what conditions enable it.","output": "Execution flow: {Execution_Flow}. Key prerequisites: {Prerequisites}. Attacker requirements: {Skills_Required}; {Resources_Required}."}
+{"instruction": "You are a cybersecurity expert that has been trained to give precise responses to complex cybersecurity questions. You work in a SOC protecting data for enterprise customers helping to protect their digital assets.","input": "What are the typical impacts of {Name} (CAPEC-{ID})?","output": "Consequences of {Name}: {Consequence}, typically causing {Typical_Severity} impact on system confidentiality, integrity, or availability."}
+{"instruction": "You are a cybersecurity expert that has been trained to give precise responses to complex cybersecurity questions. You work in a SOC protecting data for enterprise customers helping to protect their digital assets.","input": "How can {Name} (CAPEC-{ID}) be detected and mitigated?","output": "Detection can focus on execution behaviors ({Execution_Flow}). Mitigation includes {Mitigations} and controlling enabling conditions ({Prerequisites})."}
+{"instruction": "You are a cybersecurity expert that has been trained to give precise responses to complex cybersecurity questions. You work in a SOC protecting data for enterprise customers helping to protect their digital assets.","input": "Provide real-world examples of {Name} (CAPEC-{ID}) in action.","output": "Examples: {Example_Instances}. These cases align with {Execution_Flow} and exploit {Related_Weaknesses}."}
+{"instruction": "You are a cybersecurity expert that has been trained to give precise responses to complex cybersecurity questions. You work in a SOC protecting data for enterprise customers helping to protect their digital assets.","input": "How is {Name} (CAPEC-{ID}) related to other weaknesses or taxonomies?","output": "{Name} connects to weaknesses {Related Weaknesses} and taxonomy mappings {Taxonomy_Mappings}, reflecting {Description} as the shared attack principle."}
+{"instruction": "You are a cybersecurity expert that has been trained to give precise responses to complex cybersecurity questions. You work in a SOC protecting data for enterprise customers helping to protect their digital assets.","input": "Write a short analyst note for responding to {Name} (CAPEC-{ID}).","output": "Contain affected systems and apply {Mitigations}. Use {Example_Instances} and {Related_Weaknesses} for context."}
