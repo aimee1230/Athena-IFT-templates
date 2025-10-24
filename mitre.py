@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-Fill MITRE ATT&CK templates using helper modules `query_postgre` and `query_neo4j`.
+Fill MITRE ATT&CK templates (Techniques + Tools) using helper modules
+`query_postgre` and `query_neo4j`.
 Outputs JSONL files to filled_templates/.
 """
 
@@ -18,7 +19,8 @@ from query_neo4j import run_query_dict as neo4j_run_query_dict
 TEMPLATES_PATH = Path("templates/IFT_MITRE.jsonl")
 OUTPUT_DIR = Path("filled_templates")
 
-# Helper Functions
+# ---------------------- Helper Functions ----------------------
+
 def load_templates(path: Path) -> List[Dict[str, Any]]:
     """Read JSONL templates file and return list of template dicts."""
     if not path.exists():
@@ -30,6 +32,7 @@ def load_templates(path: Path) -> List[Dict[str, Any]]:
             if line:
                 templates.append(json.loads(line))
     return templates
+
 
 def safe_to_list(field_value) -> List[str]:
     """Normalize field to list of strings."""
@@ -47,6 +50,7 @@ def safe_to_list(field_value) -> List[str]:
         return [s.strip() for s in field_value.split(",") if s.strip()]
     return [str(field_value)]
 
+
 def fill_template_text(template_text: str, placeholders: Dict[str, str]) -> str:
     """Replace {placeholders} in template_text with actual values."""
     out = template_text
@@ -54,7 +58,9 @@ def fill_template_text(template_text: str, placeholders: Dict[str, str]) -> str:
         out = out.replace(f"{{{k}}}", v if v is not None else "")
     return out
 
-# Data Extraction
+
+# ---------------------- Data Extraction ----------------------
+
 def get_techniques(limit: int = None) -> List[Dict[str, Any]]:
     """Fetch techniques from PostgreSQL."""
     q = "SELECT mitre_id, name, description, x_mitre_data_sources, x_mitre_platforms, kill_chain_phases FROM techniques ORDER BY mitre_id"
@@ -63,28 +69,21 @@ def get_techniques(limit: int = None) -> List[Dict[str, Any]]:
     return pg_run_query(q, return_dict=True)
 
 
-def get_tactic_by_shortname(shortname: str) -> Dict[str, Any]:
-    """
-    Robust lookup for tactic details by shortname.
-    Tries multiple columns commonly used to store the tactic short-name:
-      - shortname
-      - name
-      - mitre_id
+def get_tools(limit: int = None) -> List[Dict[str, Any]]:
+    """Fetch tools from PostgreSQL."""
+    q = "SELECT mitre_id, name, description FROM tools ORDER BY mitre_id"
+    if limit:
+        q += f" LIMIT {limit}"
+    return pg_run_query(q, return_dict=True)
 
-    Returns a dict with keys: mitre_id, name, description (possibly empty strings).
-    """
+
+def get_tactic_by_shortname(shortname: str) -> Dict[str, Any]:
+    """Lookup tactic details by shortname."""
     if not shortname:
         return {"mitre_id": "", "name": "", "description": ""}
 
-    # sanitize single-quote inside shortname
     safe_short = shortname.replace("'", "''")
-
-    q = f"""
-    SELECT mitre_id, name, description
-    FROM tactics
-    WHERE shortname = '{safe_short}'
-    LIMIT 1;
-    """
+    q = f"SELECT mitre_id, name, description FROM tactics WHERE shortname = '{safe_short}' LIMIT 1;"
     try:
         res = pg_run_query(q, return_dict=True)
     except Exception as e:
@@ -92,19 +91,16 @@ def get_tactic_by_shortname(shortname: str) -> Dict[str, Any]:
         return {"mitre_id": "", "name": shortname, "description": ""}
 
     if res:
-        # ensure keys exist
         row = res[0]
         return {
-            "mitre_id": row.get("mitre_id", "") or "",
-            "name": row.get("name", "") or "",
-            "description": row.get("description", "") or ""
+            "mitre_id": row.get("mitre_id", ""),
+            "name": row.get("name", ""),
+            "description": row.get("description", "")
         }
 
-    # fallback: not found in DB — return shortname in 'name' so templates still meaningful
-    # (use empty mitre_id/description)
-    # helpful debug print:
     print(f"[get_tactic_by_shortname] no tactic found for shortname='{shortname}'")
     return {"mitre_id": "", "name": shortname, "description": ""}
+
 
 def get_subtechniques(technique_id: str) -> List[str]:
     """Fetch subtechniques for a technique from Neo4j, get their names from PostgreSQL."""
@@ -120,11 +116,9 @@ def get_subtechniques(technique_id: str) -> List[str]:
         return ["None"]
 
     subtech_ids = [st["mitre_id"] for st in subtechs if st.get("mitre_id")]
-
     if not subtech_ids:
         return ["None"]
 
-    # Fetch subtechnique names from PostgreSQL
     ids_str = ", ".join([f"'{sid}'" for sid in subtech_ids])
     q = f"SELECT mitre_id, name FROM techniques WHERE mitre_id IN ({ids_str});"
     res = pg_run_query(q, return_dict=True)
@@ -134,9 +128,124 @@ def get_subtechniques(technique_id: str) -> List[str]:
 
     return [f"{r['name']} ({r['mitre_id']})" for r in res]
 
-def build_filled_entries(templates: List[Dict[str, Any]], techniques: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    filled = []
 
+def get_techniques_by_tool(tool_id: str) -> List[str]:
+    """Fetch technique names for a tool using Neo4j + PostgreSQL."""
+    query = f"""
+    MATCH (t:Tool)-[:USES]->(tech:Technique)
+    WHERE t.mitre_id = '{tool_id}'
+    RETURN tech.mitre_id AS mitre_id
+    ORDER BY tech.mitre_id
+    """
+    techs = neo4j_run_query_dict(query, keys=["mitre_id"])
+
+    if not techs:
+        return ["None"]
+
+    technique_ids = [t["mitre_id"] for t in techs if t.get("mitre_id")]
+    if not technique_ids:
+        return ["None"]
+
+    ids_str = ", ".join([f"'{tid}'" for tid in technique_ids])
+    q = f"SELECT mitre_id, name FROM techniques WHERE mitre_id IN ({ids_str});"
+    res = pg_run_query(q, return_dict=True)
+
+    if not res:
+        return [tid for tid in technique_ids]
+
+    return [f"{r['name']} ({r['mitre_id']})" for r in res if r.get("name")]
+
+def get_campaigns(limit: int = None) -> List[Dict[str, Any]]:
+    """Fetch campaigns from PostgreSQL."""
+    q = "SELECT mitre_id, name, description FROM campaigns ORDER BY mitre_id"
+    if limit:
+        q += f" LIMIT {limit}"
+    return pg_run_query(q, return_dict=True)
+
+
+def get_tools_by_campaign(campaign_id: str) -> List[str]:
+    """Fetch tools linked to a campaign from Neo4j, get names from PostgreSQL."""
+    query = f"""
+    MATCH (c:Campaign)-[:USES]->(t:Tool)
+    WHERE c.mitre_id = '{campaign_id}'
+    RETURN t.mitre_id AS mitre_id
+    ORDER BY t.mitre_id
+    """
+    tools = neo4j_run_query_dict(query, keys=["mitre_id"])
+
+    if not tools:
+        return ["None"]
+
+    tool_ids = [t["mitre_id"] for t in tools if t.get("mitre_id")]
+    if not tool_ids:
+        return ["None"]
+
+    ids_str = ", ".join([f"'{tid}'" for tid in tool_ids])
+    q = f"SELECT mitre_id, name FROM tools WHERE mitre_id IN ({ids_str});"
+    res = pg_run_query(q, return_dict=True)
+
+    if not res:
+        return [tid for tid in tool_ids]
+
+    return [f"{r['name']} ({r['mitre_id']})" for r in res if r.get("name")]
+
+
+def get_techniques_by_campaign(campaign_id: str) -> List[str]:
+    """Fetch techniques linked to a campaign from Neo4j, get names from PostgreSQL."""
+    query = f"""
+    MATCH (c:Campaign)-[:USES]->(tech:Technique)
+    WHERE c.mitre_id = '{campaign_id}'
+    RETURN tech.mitre_id AS mitre_id
+    ORDER BY tech.mitre_id
+    """
+    techs = neo4j_run_query_dict(query, keys=["mitre_id"])
+
+    if not techs:
+        return ["None"]
+
+    technique_ids = [t["mitre_id"] for t in techs if t.get("mitre_id")]
+    if not technique_ids:
+        return ["None"]
+
+    ids_str = ", ".join([f"'{tid}'" for tid in technique_ids])
+    q = f"SELECT mitre_id, name FROM techniques WHERE mitre_id IN ({ids_str});"
+    res = pg_run_query(q, return_dict=True)
+
+    if not res:
+        return [tid for tid in technique_ids]
+
+    return [f"{r['name']} ({r['mitre_id']})" for r in res if r.get("name")]
+
+def get_malware(limit: int = None) -> List[Dict[str, Any]]:
+    """Fetch malware entries from PostgreSQL."""
+    q = "SELECT mitre_id, name, description FROM malware ORDER BY mitre_id"
+    if limit:
+        q += f" LIMIT {limit}"
+    return pg_run_query(q, return_dict=True)
+
+
+def get_techniques_by_malware(malware_id: str) -> List[str]:
+    """Fetch technique IDs linked to malware from Neo4j."""
+    query = f"""
+    MATCH (m:Malware)-[:USES]->(tech:Technique)
+    WHERE m.mitre_id = '{malware_id}'
+    RETURN tech.mitre_id AS mitre_id
+    ORDER BY tech.mitre_id
+    """
+    techs = neo4j_run_query_dict(query, keys=["mitre_id"])
+
+    if not techs:
+        return ["None"]
+
+    technique_ids = [t["mitre_id"] for t in techs if t.get("mitre_id")]
+    return technique_ids if technique_ids else ["None"]
+
+
+# ---------------------- Template Filling ----------------------
+
+def build_filled_entries_techniques(templates: List[Dict[str, Any]], techniques: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Fill technique-related templates."""
+    filled = []
     for t in techniques:
         mitre_id = t.get("mitre_id")
         name = t.get("name", "")
@@ -155,7 +264,7 @@ def build_filled_entries(templates: List[Dict[str, Any]], techniques: List[Dict[
         subtech_list = ", ".join(get_subtechniques(mitre_id))
         placeholders_base["subtechnique_list"] = subtech_list
 
-        # normalize kill_chain_phases
+        # Handle tactic
         phases_raw = t.get("kill_chain_phases") or []
         try:
             phases = json.loads(phases_raw) if isinstance(phases_raw, str) else phases_raw
@@ -163,9 +272,12 @@ def build_filled_entries(templates: List[Dict[str, Any]], techniques: List[Dict[
             phases = [{"phase_name": p.strip()} for p in str(phases_raw).split(",") if p.strip()]
 
         for tmpl in templates:
-            instr = tmpl.get("instruction", "")
-            inp = tmpl.get("input", "")
-            out_template = tmpl.get("output", "")
+            if "{technique_id}" not in tmpl.get("input", ""):
+                continue  # skip non-technique templates
+
+            instr = tmpl["instruction"]
+            inp = tmpl["input"]
+            out_template = tmpl["output"]
 
             # tactic template
             if "{tactic_name}" in out_template or "{tactic_purpose}" in out_template:
@@ -175,7 +287,7 @@ def build_filled_entries(templates: List[Dict[str, Any]], techniques: List[Dict[
                     filled.append({
                         "instruction": instr,
                         "input": fill_template_text(inp, placeholders),
-                        "output": fill_template_text(out_template, placeholders),
+                        "output": fill_template_text(out_template, placeholders)
                     })
                 else:
                     for ph in phases:
@@ -190,22 +302,112 @@ def build_filled_entries(templates: List[Dict[str, Any]], techniques: List[Dict[
                         filled.append({
                             "instruction": instr,
                             "input": fill_template_text(inp, placeholders),
-                            "output": fill_template_text(out_template, placeholders),
+                            "output": fill_template_text(out_template, placeholders)
                         })
             else:
                 placeholders = placeholders_base.copy()
                 filled.append({
                     "instruction": instr,
                     "input": fill_template_text(inp, placeholders),
-                    "output": fill_template_text(out_template, placeholders),
+                    "output": fill_template_text(out_template, placeholders)
                 })
+    return filled
+
+
+def build_filled_entries_tools(templates: List[Dict[str, Any]], tools: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Fill tool-related templates."""
+    filled = []
+    for tool in tools:
+        tool_id = tool.get("mitre_id", "")
+        tool_name = tool.get("name", "")
+        tool_desc = tool.get("description", "")
+
+        technique_list = ", ".join(get_techniques_by_tool(tool_id))
+
+        placeholders = {
+            "tool_id": tool_id,
+            "tool_name": tool_name,
+            "tool_description": tool_desc,
+            "technique_list": technique_list
+        }
+
+        for tmpl in templates:
+            if "{tool_id}" not in tmpl.get("input", ""):
+                continue  # skip non-tool templates
+
+            filled.append({
+                "instruction": tmpl["instruction"],
+                "input": fill_template_text(tmpl["input"], placeholders),
+                "output": fill_template_text(tmpl["output"], placeholders)
+            })
 
     return filled
 
-# Main
+def build_filled_entries_campaigns(templates: List[Dict[str, Any]], campaigns: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Fill campaign-related templates (templates 9 and 10)."""
+    filled = []
+    for camp in campaigns:
+        camp_id = camp.get("mitre_id", "")
+        camp_name = camp.get("name", "")
+        camp_desc = camp.get("description", "")
+
+        tool_list = ", ".join(get_tools_by_campaign(camp_id))
+        technique_list = ", ".join(get_techniques_by_campaign(camp_id))
+
+        placeholders = {
+            "campaign_id": camp_id,
+            "campaign_name": camp_name,
+            "campaign_description": camp_desc,
+            "tool_list": tool_list,
+            "technique_list": technique_list
+        }
+
+        for tmpl in templates:
+            if "{campaign_id}" not in tmpl.get("input", ""):
+                continue  # skip non-campaign templates
+
+            filled.append({
+                "instruction": tmpl["instruction"],
+                "input": fill_template_text(tmpl["input"], placeholders),
+                "output": fill_template_text(tmpl["output"], placeholders)
+            })
+
+    return filled
+
+def build_filled_entries_malware(templates: List[Dict[str, Any]], malware_list: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Fill malware-related templates."""
+    filled = []
+    for mw in malware_list:
+        mw_id = mw.get("mitre_id", "")
+        mw_name = mw.get("name", "")
+        mw_desc = mw.get("description", "")
+
+        technique_list = ", ".join(get_techniques_by_malware(mw_id))
+
+        placeholders = {
+            "malware_id": mw_id,
+            "malware_name": mw_name,
+            "malware_description": mw_desc,
+            "technique_list": technique_list
+        }
+
+        for tmpl in templates:
+            if "{malware_id}" not in tmpl.get("input", ""):
+                continue  # skip non-malware templates
+
+            filled.append({
+                "instruction": tmpl["instruction"],
+                "input": fill_template_text(tmpl["input"], placeholders),
+                "output": fill_template_text(tmpl["output"], placeholders)
+            })
+
+    return filled
+
+# ---------------------- Main ----------------------
+
 def main():
     parser = argparse.ArgumentParser(description="Fill MITRE templates using helpers.")
-    parser.add_argument("--limit", type=int, default=None, help="Limit number of techniques")
+    parser.add_argument("--limit", type=int, default=None, help="Limit number of items")
     parser.add_argument("--templates", type=str, default=str(TEMPLATES_PATH))
     parser.add_argument("--outdir", type=str, default=str(OUTPUT_DIR))
     args = parser.parse_args()
@@ -214,23 +416,47 @@ def main():
     outdir.mkdir(parents=True, exist_ok=True)
 
     templates = load_templates(Path(args.templates))
+
+    filled_all = []
+
+    # ---- Techniques ----
     techniques = get_techniques(limit=args.limit)
-    if not techniques:
-        print("No techniques found.")
-        return
+    if techniques:
+        filled_techniques = build_filled_entries_techniques(templates, techniques)
+        filled_all.extend(filled_techniques)
+        print(f"✅ Built {len(filled_techniques)} technique entries")
 
-    filled_entries = build_filled_entries(templates, techniques)
-    print(f"Built {len(filled_entries)} filled template entries.")
+    # ---- Tools ----
+    tools = get_tools(limit=args.limit)
+    if tools:
+        filled_tools = build_filled_entries_tools(templates, tools)
+        filled_all.extend(filled_tools)
+        print(f"✅ Built {len(filled_tools)} tool entries")
 
-    #ts = datetime.datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
-    fname = f"filled_mitre_templates_{args.limit or 'all'}.jsonl"
-    outpath = outdir / fname
+    # ---- Campaigns ----
+    campaigns = get_campaigns(limit=args.limit)
+    if campaigns:
+        filled_campaigns = build_filled_entries_campaigns(templates, campaigns)
+        filled_all.extend(filled_campaigns)
+        print(f"✅ Built {len(filled_campaigns)} campaign entries")
+    
+    # ---- Malware ----
+    malware_list = get_malware(limit=args.limit)
+    if malware_list:
+        filled_malware = build_filled_entries_malware(templates, malware_list)
+        filled_all.extend(filled_malware)
+        print(f"✅ Built {len(filled_malware)} malware entries")
 
-    with outpath.open("w", encoding="utf-8") as fh:
-        for entry in filled_entries:
-            fh.write(json.dumps(entry, ensure_ascii=False) + "\n")
+    # ---- Single Combined Output ----
+    if filled_all:
+        outpath = outdir / f"filled_mitre_templates_{args.limit or 'all'}.jsonl"
+        with outpath.open("w", encoding="utf-8") as fh:
+            for entry in filled_all:
+                fh.write(json.dumps(entry, ensure_ascii=False) + "\n")
+        print(f"🎯 Combined {len(filled_all)} total entries → {outpath}")
+    else:
+        print("⚠️ No entries were generated.")
 
-    print(f"Saved filled templates to: {outpath.resolve()}")
 
 if __name__ == "__main__":
     main()
