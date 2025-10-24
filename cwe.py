@@ -1,5 +1,7 @@
 import json
 import os
+import re
+from typing import Any
 from query_postgre import run_query
 from query_neo4j import run_query_dict
 
@@ -62,12 +64,70 @@ def format_mitigations(mitigations) -> str:
         sentences.append(f"{i}. ({phase}) {desc}")
     return "\n".join(sentences)
 
+def _ensure_list(x: Any):
+    if x is None:
+        return []
+    if isinstance(x, str):
+        try:
+            parsed = json.loads(x)
+            if isinstance(parsed, list):
+                return parsed
+        except Exception:
+            # not JSON list — try split by newlines/semicolons, else return single string
+            parts = [p.strip() for p in re.split(r'[\n;]+', x) if p.strip()]
+            return parts if parts else [x.strip()]
+    if isinstance(x, (list, tuple)):
+        return list(x)
+    return [x]
 
-def format_modes(modes) -> str:
-    if not modes:
+def format_modes(modes: Any) -> str:
+    """
+    Convert modes_of_introduction (list or JSON string) into a natural-language sentence fragment.
+    Examples:
+      - "commonly introduced during Implementation (The cookie is not marked with the HttpOnly flag)."
+      - "commonly introduced during Architecture and Design (This weakness may occur...), and Implementation."
+    Returns 'unknown' when no usable data is present.
+    """
+    modes_list = _ensure_list(modes)
+    if not modes_list:
         return "unknown"
-    phases = [m.get("phase", "") for m in modes if m.get("phase")]
-    return ", ".join(phases) if phases else "unknown"
+
+    clauses = []
+    for m in modes_list:
+        if isinstance(m, str):
+            phase = m.strip()
+            note = ""
+        elif isinstance(m, dict):
+            phase = str(m.get("phase") or "").strip()
+            note = " ".join(str(m.get("note") or "").split()).strip()
+        else:
+            # fallback - stringify
+            phase = str(m).strip()
+            note = ""
+
+        if not phase and not note:
+            continue
+
+        if phase and note:
+            clauses.append(f"{phase} ({note})")
+        elif phase:
+            clauses.append(f"{phase}")
+        elif note:
+            # if phase missing but note exists, include note as a parenthetical clause
+            clauses.append(f"({note})")
+
+    if not clauses:
+        return "unknown"
+
+    # join with commas & final 'and' for natural English
+    if len(clauses) == 1:
+        joined = clauses[0]
+    elif len(clauses) == 2:
+        joined = f"{clauses[0]} and {clauses[1]}"
+    else:
+        joined = f"{', '.join(clauses[:-1])}, and {clauses[-1]}"
+
+    return f"commonly introduced during {joined}"
 
 
 def format_related_weaknesses(weaknesses) -> str:
@@ -90,7 +150,7 @@ def format_observed_examples(examples) -> str:
         ref = e.get("reference", "")
         desc = e.get("description", "").strip()
         sentences.append(f"{i}. {ref}: {desc}")
-    return "\n".join(sentences)
+    return " ".join(sentences)
 
 def format_common_consequences(consequences) -> str:
     """

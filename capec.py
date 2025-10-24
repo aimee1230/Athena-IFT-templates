@@ -11,70 +11,43 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 def format_execution_flow(flow: Any) -> str:
     """
-    Format execution_flow so each step prints compactly as:
-    Step <n> | Phase: <phase> | Techniques: <tech1>, <tech2>, ... | Description: <description>
-
-    Accepts a list, or a JSON string representing a list.
-    Handles small key typos like "ste p".
+    Convert execution flow into sentence form for readability.
     """
     if not flow:
         return "None"
 
-    # If flow is a JSON string, try to parse it
+    # Parse JSON string if needed
     if isinstance(flow, str):
         try:
             parsed = json.loads(flow)
             if isinstance(parsed, list):
                 flow = parsed
         except Exception:
-            return flow.strip()  # fallback to raw string
+            return flow.strip()
 
-    lines = []
+    sentences = []
     for step_obj in (flow or []):
-        # tolerate keys like "ste p" or "step"
-        step_no = step_obj.get("step") if isinstance(step_obj, dict) else None
-        if step_no is None:
-            for k in ("ste p", "st ep", "stp", "s"):
-                if isinstance(step_obj, dict) and k in step_obj:
-                    step_no = step_obj.get(k)
-                    break
-        step_no = str(step_no).strip() if step_no is not None else ""
+        step_no = step_obj.get("step") or step_obj.get("ste p") or ""
+        phase = step_obj.get("phase") or ""
+        techniques = step_obj.get("techniques") or []
+        desc = step_obj.get("description") or ""
 
-        phase = (step_obj.get("phase") if isinstance(step_obj, dict) else "") or ""
-        phase = str(phase).strip()
+        if isinstance(techniques, list):
+            tech_str = ", ".join(techniques)
+        else:
+            tech_str = str(techniques)
 
-        # techniques may be list or a single string
-        techniques = step_obj.get("techniques") if isinstance(step_obj, dict) else None
-        if isinstance(techniques, str):
-            try:
-                tparsed = json.loads(techniques)
-                if isinstance(tparsed, list):
-                    techniques = tparsed
-            except Exception:
-                techniques = [t.strip() for t in re.split(r'[\n;]+', techniques) if t.strip()]
-        techniques = techniques or []
+        sentence = f"Step {step_no}: During the {phase} phase, the attacker uses {tech_str}. Description: {desc}."
+        sentences.append(sentence)
 
-        desc = (step_obj.get("description") if isinstance(step_obj, dict) else "") or ""
-        desc = " ".join(str(desc).split())  # remove line breaks, extra spaces
+    return " ".join(sentences)
 
-        tech_str = ", ".join(" ".join(str(t).split()) for t in techniques) if techniques else "None"
-
-        # Compose single line per step
-        step_line = f"Step {step_no}" if step_no else "Step"
-        if phase:
-            step_line += f" \nPhase: {phase}"
-        step_line += f" \nTechniques: {tech_str}"
-        step_line += f"\nDescription: {desc}"
-
-        lines.append(step_line)
-
-    return "\n".join(lines)
 
 
 def format_prerequisites(prereqs) -> str:
     if not prereqs:
         return "None"
-    return "\n".join(f"- {p}" for p in prereqs)
+    return " ".join(f"- {p}" for p in prereqs)
 
 
 def format_skills(skills) -> str:
@@ -113,7 +86,7 @@ def format_consequences(cons) -> str:
 def format_mitigations(mitigations) -> str:
     if not mitigations:
         return "No mitigations found"
-    return "".join(f"{m}" for m in mitigations)
+    return " ".join(f"{m}" for m in mitigations)
 
 
 def format_examples(examples) -> str:
@@ -130,11 +103,13 @@ def format_related_weaknesses(weaknesses) -> str:
 
 def format_taxonomy_mappings(mappings) -> str:
     """
-    Format taxonomy_mappings into readable bullets.
+    Format taxonomy_mappings into a single readable sentence.
     Accepts list of dicts or JSON string.
+    Example output:
+    'the taxonomy entry "Hijack Execution Flow: ServicesFile Permissions Weakness" (ID: 1574.010, Taxonomy: ATTACK)'
     """
     if not mappings:
-        return "None found."
+        return "None"
 
     # parse JSON string if needed
     if isinstance(mappings, str):
@@ -143,13 +118,22 @@ def format_taxonomy_mappings(mappings) -> str:
         except Exception:
             return mappings.strip()
 
-    lines = []
+    formatted = []
     for m in mappings:
         entry_id = m.get("entry_id", "").strip()
         entry_name = m.get("entry_name", "").strip()
         taxonomy_name = m.get("taxonomy_name", "").strip()
-        lines.append(f"- ID: {entry_id}, Name: {entry_name}, Taxonomy: {taxonomy_name}")
-    return "\n".join(lines)
+        if entry_name or entry_id or taxonomy_name:
+            formatted.append(f'"{entry_name}" (ID: {entry_id}, Taxonomy: {taxonomy_name})')
+
+    if not formatted:
+        return "None"
+
+    # join multiple entries with commas and 'and' before the last one
+    if len(formatted) == 1:
+        return f'the taxonomy entry {formatted[0]}'
+    else:
+        return f'the taxonomy entries {", ".join(formatted[:-1])}, and {formatted[-1]}'
 
 
 def get_output_path(limit: int) -> str:
