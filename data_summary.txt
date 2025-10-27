@@ -1,0 +1,62 @@
+MITRE ATT&CK / CAPEC / CWE / CVE DATA SUMMARY
+
+Overview
+--------
+This repository contains template files and filled IFT (Input-Format-Template) samples derived from multiple security datasets (MITRE ATT&CK Enterprise, CAPEC, CWE, and CVE). The numbers below describe how many templates exist per category in the repo and how much raw data is present in the PostgreSQL source tables, plus the number of IFT samples produced for each category.
+
+MITRE ATT&CK (Enterprise)
+-------------------------
+- Campaigns (templates): 2
+  - Raw campaign entries: 47
+  - IFT samples generated: 94
+- Tactics: 14
+- Techniques (templates): 6
+  - Raw technique entries: 823
+  - IFT samples generated: 1290
+- Malware (templates): 2
+  - Raw malware entries: 667
+  - IFT samples generated: 430
+- Tools (templates): 2
+  - Raw tool entries: 91
+  - IFT samples generated: 182
+
+MITRE ATT&CK Totals (repo-driven)
+---------------------------------
+- Total MITRE IFT samples: 1996
+- limit : 215
+
+CAPEC
+-----
+- capec_patterns: 615
+- Templates: 7
+- Limit used per-template: 286
+- IFT samples produced: 2002
+
+CWE
+---
+- cwe_weaknesses: 969
+- Templates: 7
+- Limit used per-template: 286
+- IFT samples produced: 2002
+
+CVE (2024–2025)
+--------------
+- cve_vulnerabilities (source table): 57,773 (CVE2024–2025 subset)
+- Templates: 5
+- Limit used per-template: 400
+- IFT samples produced: 2000
+- NOTE (filtering for templates):
+  - The templates in this repository are filled using **CVE entries from the year 2025 only**.
+  - **Only** CVE records whose `metrics` include **CVSS v3.1** scoring are selected for template filling and sampling. All CVE sampling and per-template limits (above) are applied *after* this filtering step.
+
+Grand Total
+-----------
+- Total IFT samples across all datasets (approx): 8000
+
+Notes
+-----
+- "Templates" refers to template files in this repository used to generate the IFT samples.
+- "Raw entries" are counts from the PostgreSQL tables (source data).
+- "Limit used per-template" indicates the cap applied when generating filled templates from a large table.
+- IFT samples are approximate totals generated for downstream tasks (modeling / export / testing).
+- For CVE template generation: data selection is restricted to CVEs from 2025 that include CVSS v3.1 metrics; this is intended to ensure metric consistency in produced templates.
