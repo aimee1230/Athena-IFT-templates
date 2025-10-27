@@ -140,11 +140,11 @@ def get_techniques_by_tool(tool_id: str) -> List[str]:
     techs = neo4j_run_query_dict(query, keys=["mitre_id"])
 
     if not techs:
-        return ["None"]
+        return ["None techniques"]
 
     technique_ids = [t["mitre_id"] for t in techs if t.get("mitre_id")]
     if not technique_ids:
-        return ["None"]
+        return ["None techniques"]
 
     ids_str = ", ".join([f"'{tid}'" for tid in technique_ids])
     q = f"SELECT mitre_id, name FROM techniques WHERE mitre_id IN ({ids_str});"
@@ -201,11 +201,11 @@ def get_techniques_by_campaign(campaign_id: str) -> List[str]:
     techs = neo4j_run_query_dict(query, keys=["mitre_id"])
 
     if not techs:
-        return ["None"]
+        return ["None techniques"]
 
     technique_ids = [t["mitre_id"] for t in techs if t.get("mitre_id")]
     if not technique_ids:
-        return ["None"]
+        return ["None techniques"]
 
     ids_str = ", ".join([f"'{tid}'" for tid in technique_ids])
     q = f"SELECT mitre_id, name FROM techniques WHERE mitre_id IN ({ids_str});"
@@ -235,7 +235,7 @@ def get_techniques_by_malware(malware_id: str) -> List[str]:
     techs = neo4j_run_query_dict(query, keys=["mitre_id"])
 
     if not techs:
-        return ["None"]
+        return ["None techniques"]
 
     technique_ids = [t["mitre_id"] for t in techs if t.get("mitre_id")]
     return technique_ids if technique_ids else ["None"]
