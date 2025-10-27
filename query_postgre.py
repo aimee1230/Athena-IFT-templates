@@ -9,10 +9,10 @@ import psycopg2.extras
 
 # Database configuration from environment variables
 DB_CONFIG = {
-    'host': os.getenv('POSTGRES_HOST', '127.0.0.1'),
+    'host': os.getenv('POSTGRES_HOST', '127.0.0,0'),
     'database': os.getenv('POSTGRES_DB', 'threats'),
     'user': os.getenv('POSTGRES_USER', 'postgres'),
-    'password': os.getenv('POSTGRES_PASSWORD', 'gSC7LZ7JKHgsZVYdulWG60mdK8Q3XQzO'),
+    'password': os.getenv('POSTGRES_PASSWORD', 'gSC7LO'),
     'port': int(os.getenv('POSTGRES_PORT', 5432))
 }
 
