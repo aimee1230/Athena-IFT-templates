@@ -247,72 +247,51 @@ def build_filled_entries_techniques(templates: List[Dict[str, Any]], techniques:
     """Fill technique-related templates."""
     filled = []
     for t in techniques:
-        mitre_id = t.get("mitre_id")
+        mitre_id = t.get("mitre_id", "")
         name = t.get("name", "")
         description = t.get("description", "")
         data_sources = ", ".join(safe_to_list(t.get("x_mitre_data_sources")))
         platforms = ", ".join(safe_to_list(t.get("x_mitre_platforms")))
 
-        placeholders_base = {
+        placeholders = {
             "technique_name": name,
             "technique_id": mitre_id,
             "brief_description_of_technique": description,
             "x_mitre_data_sources": data_sources,
-            "platform_list": platforms
+            "platform_list": platforms,
+            "subtechnique_list": ", ".join(get_subtechniques(mitre_id))
         }
 
-        subtech_list = ", ".join(get_subtechniques(mitre_id))
-        placeholders_base["subtechnique_list"] = subtech_list
-
-        # Handle tactic
+        # Handle one tactic only (first phase if exists)
         phases_raw = t.get("kill_chain_phases") or []
         try:
             phases = json.loads(phases_raw) if isinstance(phases_raw, str) else phases_raw
         except Exception:
             phases = [{"phase_name": p.strip()} for p in str(phases_raw).split(",") if p.strip()]
 
-        for tmpl in templates:
-            if "{technique_id}" not in tmpl.get("input", ""):
-                continue  # skip non-technique templates
+        if phases:
+            ph = phases[0]
+            phase_name = ph.get("phase_name") if isinstance(ph, dict) else str(ph)
+            tactic = get_tactic_by_shortname(phase_name)
+            placeholders.update({
+                "tactic_name": tactic.get("name", ""),
+                "tactic_purpose": tactic.get("description", ""),
+                "tactic_id": tactic.get("mitre_id", "")
+            })
+        else:
+            placeholders.update({"tactic_name": "", "tactic_purpose": "", "tactic_id": ""})
 
-            instr = tmpl["instruction"]
-            inp = tmpl["input"]
-            out_template = tmpl["output"]
+        for tmpl in templates:  # Only first 6 technique templates
+            if not any(tag in tmpl.get("input", "") for tag in ["{technique_id}", "{technique_name}", "{brief_description_of_technique}"]):
+                continue
 
-            # tactic template
-            if "{tactic_name}" in out_template or "{tactic_purpose}" in out_template:
-                if not phases:
-                    placeholders = placeholders_base.copy()
-                    placeholders.update({"tactic_name": "", "tactic_purpose": ""})
-                    filled.append({
-                        "instruction": instr,
-                        "input": fill_template_text(inp, placeholders),
-                        "output": fill_template_text(out_template, placeholders)
-                    })
-                else:
-                    for ph in phases:
-                        phase_name = ph.get("phase_name") if isinstance(ph, dict) else str(ph)
-                        tactic = get_tactic_by_shortname(phase_name)
-                        placeholders = placeholders_base.copy()
-                        placeholders.update({
-                            "tactic_name": tactic.get("name", ""),
-                            "tactic_purpose": tactic.get("description", ""),
-                            "tactic_id": tactic.get("mitre_id", "")
-                        })
-                        filled.append({
-                            "instruction": instr,
-                            "input": fill_template_text(inp, placeholders),
-                            "output": fill_template_text(out_template, placeholders)
-                        })
-            else:
-                placeholders = placeholders_base.copy()
-                filled.append({
-                    "instruction": instr,
-                    "input": fill_template_text(inp, placeholders),
-                    "output": fill_template_text(out_template, placeholders)
-                })
+            filled.append({
+                "instruction": tmpl["instruction"],
+                "input": fill_template_text(tmpl["input"], placeholders),
+                "output": fill_template_text(tmpl["output"], placeholders)
+            })
+
     return filled
-
 
 def build_filled_entries_tools(templates: List[Dict[str, Any]], tools: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """Fill tool-related templates."""
