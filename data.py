@@ -24,7 +24,8 @@ with open(combined_file, "w", encoding="utf-8") as f:
     for item in all_data:
         f.write(json.dumps(item) + "\n")
 
-# Shuffle the data
+# Set seed for reproducibility
+random.seed(42)
 random.shuffle(all_data)
 
 # Write shuffled JSONL
