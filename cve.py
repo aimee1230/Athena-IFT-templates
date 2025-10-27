@@ -1,9 +1,3 @@
-#!/usr/bin/env python3
-"""
-Auto-fill CVE templates using data from PostgreSQL.
-Automatically detects which placeholders a template requires.
-"""
-
 import json
 import argparse
 from pathlib import Path
@@ -169,43 +163,6 @@ def extract_description(desc_raw: str) -> str:
     # Normalize whitespace / newlines into single spaces
     return " ".join(description.split())
 
-def extract_impact(imp_raw: str) -> str:
-    """
-    Extract human-readable impact from various impact JSON formats.
-    Handles:
-      - [{"capecId": "...", "descriptions": [{"lang": "en", "value": "..."}]}]
-    Returns plain text (e.g. "CAPEC-233 Privilege Escalation" or "CWE-287 Improper Authentication").
-    """
-    imp_json = safe_json_load(imp_raw)
-    if not imp_json:
-        return ""
-
-    # impact is a list of objects (CAPEC or CWE)
-    if isinstance(imp_json, list):
-        results = []
-        for item in imp_json:
-            if not isinstance(item, dict):
-                continue
-
-            # CAPEC-style
-            if "capecId" in item:
-                descs = item.get("descriptions", [])
-                for d in descs:
-                    if isinstance(d, dict) and d.get("lang") == "en" and d.get("value"):
-                        results.append(d["value"].strip())
-
-            # Fallback
-            elif item.get("description"):
-                results.append(item["description"].strip())
-
-        if results:
-            return "; ".join(results)
-
-    # Fallback: return raw string
-    return str(imp_raw).strip()
-
-
-
 # Core Logic
 def build_filled_entries(templates: List[Dict[str, Any]], cves: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     filled = []
@@ -216,22 +173,13 @@ def build_filled_entries(templates: List[Dict[str, Any]], cves: List[Dict[str, A
         imp_raw = cve.get("impacts", "")
         metrics_raw = cve.get("metrics", "")
 
-        # Optional debug (uncomment if you want to inspect raw DB values)
-        # print("[DEBUG] metrics_raw:", metrics_raw)
-        # print("[DEBUG] desc_raw:", desc_raw)
-        # print("[DEBUG] imp_raw:", imp_raw)
-
         description = extract_description(desc_raw)
-        impact = extract_impact(imp_raw)
-
         cvss_data = extract_cvss_metrics(metrics_raw)
         cvss_score = cvss_data.get("cvss_score", "")
         attack_vector = cvss_data.get("attack_vector", "")
 
         placeholders_base = {
             "cve_id": cve_id,
-            "vulnerability_description": description,
-            "potential_impact": impact,
             "cve_description": description,
             "cvss_score": cvss_score,
             "attack_vector": attack_vector,
