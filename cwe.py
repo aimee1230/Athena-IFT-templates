@@ -81,13 +81,6 @@ def _ensure_list(x: Any):
     return [x]
 
 def format_modes(modes: Any) -> str:
-    """
-    Convert modes_of_introduction (list or JSON string) into a natural-language sentence fragment.
-    Examples:
-      - "commonly introduced during Implementation (The cookie is not marked with the HttpOnly flag)."
-      - "commonly introduced during Architecture and Design (This weakness may occur...), and Implementation."
-    Returns 'unknown' when no usable data is present.
-    """
     modes_list = _ensure_list(modes)
     if not modes_list:
         return "unknown"
@@ -150,34 +143,39 @@ def format_observed_examples(examples) -> str:
         ref = e.get("reference", "")
         desc = e.get("description", "").strip()
         sentences.append(f"{i}. {ref}: {desc}")
-    return " ".join(sentences)
+    return "\n".join(sentences)
 
 def format_common_consequences(consequences) -> str:
-    """
-    Convert common_consequences (list of dicts or JSON string) into readable text.
-    """
     if not consequences:
-        return "no consequences available"
+        return "No known consequences have been reported."
 
+    # Parse JSON if necessary
     if isinstance(consequences, str):
         try:
             consequences = json.loads(consequences)
         except Exception:
-            return consequences  # fallback to raw string
+            return consequences.strip()
 
-    sentences = []
+    lines = []
     for i, item in enumerate(consequences, start=1):
         if isinstance(item, dict):
             note = item.get("note", "").strip()
             impact = item.get("impact", "").strip()
             scopes = ", ".join(item.get("scopes", []))
+
+            # Build natural-language sentence
             sentence = f"{i}. {note}"
-            if impact or scopes:
-                sentence += f" (Impact: {impact}; Scope: {scopes})"
+            if impact and scopes:
+                sentence += f" This primarily impacts {scopes.lower()} through {impact.lower()}."
+            elif impact:
+                sentence += f" This results in {impact.lower()}."
+            elif scopes:
+                sentence += f" This affects {scopes.lower()}."
         else:
             sentence = f"{i}. {item}"
-        sentences.append(sentence)
-    return "\n".join(sentences)
+        lines.append(sentence)
+
+    return "\n".join(lines)
 
 
 def get_output_path(limit: int) -> str:
