@@ -11,82 +11,136 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 def format_execution_flow(flow: Any) -> str:
     """
-    Convert execution flow into sentence form for readability.
+    Convert execution flow into multi-line, bulleted step form for readability.
     """
     if not flow:
         return "None"
 
-    # Parse JSON string if needed
+    # If flow is a JSON string, try to parse it to a list
     if isinstance(flow, str):
         try:
             parsed = json.loads(flow)
             if isinstance(parsed, list):
                 flow = parsed
         except Exception:
+            # return stripped string (single-line) as fallback
             return flow.strip()
 
-    sentences = []
+    blocks = []
     for step_obj in (flow or []):
         step_no = step_obj.get("step") or step_obj.get("ste p") or ""
         phase = step_obj.get("phase") or ""
         techniques = step_obj.get("techniques") or []
-        desc = step_obj.get("description") or ""
+        desc = (step_obj.get("description") or "").strip()
 
-        if isinstance(techniques, list):
-            tech_str = ", ".join(techniques)
+        # Normalize techniques into a list
+        if isinstance(techniques, str):
+            # attempt to split comma/semicolon separated strings
+            techs = [t.strip() for t in re.split(r"[;,]\s*", techniques) if t.strip()]
+        elif isinstance(techniques, list):
+            techs = [str(t).strip() for t in techniques if t is not None and str(t).strip()]
         else:
-            tech_str = str(techniques)
+            techs = [str(techniques).strip()] if techniques else []
 
-        sentence = f"Step {step_no}: During the {phase} phase, the attacker uses {tech_str}. Description: {desc}."
-        sentences.append(sentence)
+        # Build step header
+        header = f"Step {step_no}: During the {phase} phase, the attacker uses:"
+        # Build bullets for techniques/resources used
+        if techs:
+            tech_lines = "\n".join(f"- {t}" for t in techs)
+        else:
+            tech_lines = "- (no specific techniques listed)"
 
-    return " ".join(sentences)
+        # Description line (single paragraph)
+        desc_line = f"Description: {desc}" if desc else "Description: None."
 
+        # Combine with a blank line at end of step block
+        block = f"{header}\n{tech_lines}\n{desc_line}"
+        blocks.append(block)
 
+    # Join steps with a blank line between them
+    return "\n".join(blocks)
 
 def format_prerequisites(prereqs) -> str:
+    """Return prerequisites as one bullet per line."""
     if not prereqs:
-        return "None"
-    return " ".join(f"- {p}" for p in prereqs)
+        return "- None"
+    # if prereqs is a JSON string, try to parse
+    if isinstance(prereqs, str):
+        try:
+            parsed = json.loads(prereqs)
+            if isinstance(parsed, list):
+                prereqs = parsed
+        except Exception:
+            # fallback: split by newline or semicolon or comma
+            prereqs = [p.strip() for p in re.split(r"[\n;,]\s*", prereqs) if p.strip()]
+    return "\n".join(f"- {p}" for p in prereqs)
 
 
 def format_skills(skills) -> str:
+    """Return skills as one bullet per line with level and description."""
     if not skills:
-        return "None"
+        return "- None"
+    # accept list of dicts or JSON string
+    if isinstance(skills, str):
+        try:
+            parsed = json.loads(skills)
+            if isinstance(parsed, list):
+                skills = parsed
+        except Exception:
+            # fallback: treat as single-line description
+            return f"- {skills.strip()}"
     lines = []
     for s in skills:
-        level = s.get("level", "")
-        desc = s.get("description", "")
-        lines.append(f"- {level}: {desc}")
+        # s might be a dict or a string
+        if isinstance(s, dict):
+            level = s.get("level", "").strip()
+            desc = s.get("description", "").strip()
+            if level and desc:
+                lines.append(f"- {level}: {desc}")
+            elif desc:
+                lines.append(f"- {desc}")
+            elif level:
+                lines.append(f"- {level}")
+        else:
+            lines.append(f"- {str(s).strip()}")
     return "\n".join(lines)
 
 
 def format_resources(resources) -> str:
+    """Return resources as bullets."""
     if not resources:
-        return "None"
+        return "- None"
+    if isinstance(resources, str):
+        try:
+            parsed = json.loads(resources)
+            if isinstance(parsed, list):
+                resources = parsed
+        except Exception:
+            resources = [r.strip() for r in re.split(r"[\n;,]\s*", resources) if r.strip()]
     return "\n".join(f"- {r}" for r in resources)
 
 
 def format_consequences(cons) -> str:
     if not cons:
         return "None"
+
     lines = []
     for c in cons:
-        impact = c.get("impact", "")
-        scopes = ", ".join(c.get("scopes", []))
-        if impact and scopes:
-            lines.append(f"{impact} impact on {scopes}")
+        impact = c.get("impact", "").strip()
+        scopes = c.get("scopes", [])
+        if scopes:
+            scope_str = ", ".join(scopes)
+            lines.append(f"- {impact} impacts {scope_str}.")
         elif impact:
-            lines.append(f"{impact} impact")
-        elif scopes:
-            lines.append(f"Affecting: {scopes}")
-    return "; ".join(lines)
+            lines.append(f"- {impact} impact.")
+
+    return "\n".join(lines)
 
 
 def format_mitigations(mitigations) -> str:
     if not mitigations:
         return "No mitigations found"
-    return " ".join(f"{m}" for m in mitigations)
+    return "\n".join(f"{m}" for m in mitigations)
 
 
 def format_examples(examples) -> str:
