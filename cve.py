@@ -28,16 +28,25 @@ def fill_template_text(template_text: str, placeholders: Dict[str, str]) -> str:
 
 # Data Extraction
 def get_cve_data(limit: int = None) -> List[Dict[str, Any]]:
-    """Fetch CVE data from PostgreSQL (only 2024 & 2025 CVEs by default)."""
     q = """
     SELECT cve_id, descriptions, impacts, metrics
     FROM cve_vulnerabilities
-    WHERE cve_id LIKE 'CVE-2025-%' OR cve_id LIKE 'CVE-2024-%'
+    WHERE cve_id LIKE 'CVE-2025-%'
     ORDER BY cve_id
     """
     if limit:
-        q += f" LIMIT {limit}"
-    return pg_run_query(q, return_dict=True)
+        q += f" LIMIT {limit * 3}"  # fetch more to filter later
+    rows = pg_run_query(q, return_dict=True)
+
+    # Keep only those with metrics containing v3/v3.1 and not v4.0
+    filtered = [
+        r for r in rows
+        if r.get("metrics")
+        and "cvssV4" not in str(r["metrics"])
+        and ("cvssV3_1" in str(r["metrics"]) or "cvssV3" in str(r["metrics"]))
+    ]
+    return filtered[:limit] if limit else filtered
+
 
 def safe_json_load(s):
     """Try loading JSON safely, handling common PostgreSQL formatting quirks."""

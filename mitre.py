@@ -1,10 +1,3 @@
-#!/usr/bin/env python3
-"""
-Fill MITRE ATT&CK templates (Techniques + Tools) using helper modules
-`query_postgre` and `query_neo4j`.
-Outputs JSONL files to filled_templates/.
-"""
-
 import os
 import json
 import argparse
