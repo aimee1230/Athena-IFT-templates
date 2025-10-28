@@ -56,12 +56,17 @@ def format_detection_methods(methods) -> str:
 
 def format_mitigations(mitigations) -> str:
     if not mitigations:
-        return "no mitigations available"
+        return "No specific mitigations are listed for this weakness."
     sentences = []
     for i, m in enumerate(mitigations, start=1):
-        phase = m.get("phase", "")
+        phase = m.get("phase", "").strip()
         desc = m.get("description", "").strip()
-        sentences.append(f"{i}. ({phase}) {desc}")
+
+        if phase:
+            sentences.append(f"{i}. {phase}: {desc}")
+        else:
+            sentences.append(f"{i}. {desc}")
+
     return "\n".join(sentences)
 
 def _ensure_list(x: Any):
