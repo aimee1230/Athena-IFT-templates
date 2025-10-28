@@ -8,9 +8,9 @@ import requests
 import base64
 
 # Neo4j configuration from environment variables (can be overridden)
-NEO4J_URL = os.getenv('NEO4J_URL', 'http://127.0.0.1')
+NEO4J_URL = os.getenv('NEO4J_URL', 'http://127.0.0.1:7474')
 NEO4J_USER = os.getenv('NEO4J_USER', 'neo4j')
-NEO4J_PASSWORD = os.getenv('NEO4J_PASSWORD', 'yx1c')
+NEO4J_PASSWORD = os.getenv('NEO4J_PASSWORD', 'yx1c8dp3FSk3vEU375T0zeVz9fQryJZX')
 
 NEO4J_ENDPOINT = f"{NEO4J_URL}/db/neo4j/tx/commit"
 

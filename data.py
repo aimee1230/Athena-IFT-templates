@@ -7,13 +7,13 @@ from pathlib import Path
 input_folder = Path("filled_templates")
 
 # Output files inside the same folder
-combined_file = input_folder / "combined.jsonl"
-shuffled_file = input_folder / "combined_shuffled.jsonl"
+combined_file = input_folder / "combined_IFT.jsonl"
+shuffled_file = input_folder / "combined_IFT_shuffled.jsonl"
 
 all_data = []
 
-# Read all JSONL files and append to all_data
-for jsonl_file in sorted(input_folder.glob("*.jsonl")):
+# Read only JSONL files starting with "IFT"
+for jsonl_file in sorted(input_folder.glob("filled*.jsonl")):
     with open(jsonl_file, "r", encoding="utf-8") as f:
         for line in f:
             if line.strip():  # Skip empty lines

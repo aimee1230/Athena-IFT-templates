@@ -120,7 +120,7 @@ def format_modes(modes: Any) -> str:
     else:
         joined = f"{', '.join(clauses[:-1])}, and {clauses[-1]}"
 
-    return f"commonly introduced during {joined}"
+    return f"{joined}"
 
 
 def format_related_weaknesses(weaknesses) -> str:
