@@ -35,16 +35,31 @@ def get_cve_data(limit: int = None) -> List[Dict[str, Any]]:
     ORDER BY cve_id
     """
     if limit:
-        q += f" LIMIT {limit * 3}"  # fetch more to filter later
+        q += f" LIMIT {limit * 3}"  # fetch extra to filter later
     rows = pg_run_query(q, return_dict=True)
 
-    # Keep only those with metrics containing v3/v3.1 and not v4.0
-    filtered = [
-        r for r in rows
-        if r.get("metrics")
-        and "cvssV4" not in str(r["metrics"])
-        and ("cvssV3_1" in str(r["metrics"]) or "cvssV3" in str(r["metrics"]))
-    ]
+    filtered = []
+    for r in rows:
+        metrics = r.get("metrics")
+        if not metrics:
+            continue
+
+        metrics_str = str(metrics)
+
+        # Skip CVSS v4 and v3.0
+        if any(v in metrics_str for v in ("cvssV4", "cvssV3_0")):
+            continue
+
+        # Include only CVEs containing CVSSv3.1
+        if "cvssV3_1" in metrics_str:
+            filtered.append(r)
+            continue
+
+        # (Optional fallback) Some feeds may use cvssMetricV31 key (NVD)
+        if "cvssMetricV31" in metrics_str:
+            filtered.append(r)
+            continue
+
     return filtered[:limit] if limit else filtered
 
 
